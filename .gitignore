@@ -10,7 +10,7 @@
 !build.gradle
 !build.properties
 !settings.gradle
-
+!.github/
 # Other Files.
 !LICENSE
 !README.md
