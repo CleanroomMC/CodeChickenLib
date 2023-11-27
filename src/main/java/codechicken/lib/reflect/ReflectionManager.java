@@ -1,5 +1,6 @@
 package codechicken.lib.reflect;
 
+import net.minecraftforge.common.util.EnumHelper;
 import org.objectweb.asm.Type;
 
 import java.lang.reflect.*;
@@ -284,7 +285,7 @@ public class ReflectionManager {
         }
         try {
             if (modifiersField == null) {
-                modifiersField = getField(new ObfMapping("java/lang/reflect/Field", "modifiers"));
+                modifiersField = Field.class.getDeclaredField("modifiers");
                 modifiersField.setAccessible(true);
             }
             modifiersField.set(field, field.getModifiers() & ~Modifier.FINAL);
