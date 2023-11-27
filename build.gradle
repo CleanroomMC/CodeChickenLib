@@ -1,14 +1,20 @@
 buildscript {
     repositories {
-        maven { url = 'https://maven.minecraftforge.net' }
         mavenCentral()
+        maven {
+            name = "forge"
+            url = "https://maven.minecraftforge.net"
+        }
     }
     dependencies {
-        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '6.0.+', changing: true
+        classpath("com.anatawa12.forge:ForgeGradle:2.3-1.0.+") {
+            changing = true
+        }
     }
 }
 
-apply plugin: 'net.minecraftforge.gradle'
+apply plugin: 'net.minecraftforge.gradle.forge'
+apply plugin: 'maven'
 
 group = "codechicken" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = "CodeChickenLib"
@@ -26,48 +32,23 @@ configFile.withReader {
     project.ext.config = new ConfigSlurper().parse prop
 }
 
-version = "${project.config.mod_version}." + (System.getenv("BUILD_NUMBER") ?: "400")
+version = "${project.config.mod_version}." + (System.getenv("BUILD_NUMBER") ?: "1")
 
-sourceSets.main.resources { srcDir 'src/generated/resources' }
 println config.mc_version + "-" + config.forge_version
 // Setup the forge minecraft plugin data. Specify the preferred forge/minecraft version here
 minecraft {
-
-    mappings channel: 'snapshot', version: '20171003-1.12'
-
-    accessTransformer = file('src/main/resources/ccl_at.cfg')
-
-    runs {
-        client {
-            workingDirectory project.file('run/client')
-
-            property 'forge.logging.markers', 'REGISTRIES'
-            property 'forge.logging.console.level', 'debug'
-
-        }
-
-        server {
-            workingDirectory project.file('run/server')
-
-            property 'forge.logging.markers', 'REGISTRIES'
-            property 'forge.logging.console.level', 'debug'
-
-            mods {
-                "${mod_id}" {
-                    source sourceSets.main
-                }
-            }
-        }
-    }
+    version = config.mc_version + "-" + config.forge_version
+    mappings = config.mappings
+    runDir = "run"
+    replace '${mod_version}', project.config.mod_version
+    makeObfSourceJar = false
 }
 
 dependencies {
-    testImplementation 'junit:junit:4.12'
-    minecraft "net.minecraftforge:forge:1.12.2-14.23.5.2860"
+    testCompile 'junit:junit:4.12'
 }
 
 processResources {
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     inputs.property "version", project.version
     inputs.property "mc_version", project.config.mc_version
 
@@ -78,27 +59,44 @@ processResources {
     rename '(.+_at.cfg)', 'META-INF/$1'
 }
 
-version = "1.12.2-${project.version}"
+version = "${project.minecraft.version}-${project.version}"
 def commonManifest = {
     attributes 'FMLAT': 'ccl_at.cfg'
 }
 
 jar {
-    archiveClassifier = 'universal'
+    classifier = 'universal'
     manifest commonManifest
 }
 
 task deobfJar(type: Jar) {
     from sourceSets.main.output
-    archiveClassifier = 'deobf'
+    classifier = 'deobf'
     manifest commonManifest
 }
 
 task srcJar(type: Jar) {
     from sourceSets.main.allSource
-    archiveClassifier = 'sources'
+    classifier = 'sources'
     manifest commonManifest
 }
+
+task signJar(type: SignJar, dependsOn: reobfJar) {
+    onlyIf { // Skip the task if our secret data isn't available
+        project.hasProperty('keyStore')
+    }
+
+    if (project.hasProperty('keyStore')) {
+        keyStore = project.keyStore // This needs to be a path to the keystore file
+        alias = project.keyStoreAlias
+        storePass = project.keyStorePass
+        keyPass = project.keyStoreKeyPass
+        inputFile = jar.archivePath
+        outputFile = jar.archivePath
+    }
+}
+
+build.dependsOn signJar
 
 // Tell the artifact system about our extra jars
 artifacts {
@@ -106,3 +104,51 @@ artifacts {
     archives srcJar
 }
 
+// Configure an upload task.
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            if (project.hasProperty("local_maven")) {
+                repository(url: "file://${local_maven}")
+                pom {
+                    groupId = project.group
+                    // Force the maven upload to use the <mcversion>-<version> syntax preferred at files
+                    artifactId = project.archivesBaseName
+                    project {
+                        name project.archivesBaseName
+                        packaging 'jar'
+                        description 'CodeChickenLib'
+                        url 'https://github.com/TheCBProject/CodeChickenLib'
+
+                        scm {
+                            url 'https://github.com/TheCBProject/CodeChickenLib'
+                            connection 'scm:git:git://github.com/TheCBProject/CodeChickenLib.git'
+                            developerConnection 'scm:git:git@github.com:TheCBProject/CodeChickenLib.git'
+                        }
+
+                        issueManagement {
+                            system 'github'
+                            url 'https://github.com/TheCBProject/CodeChickenLib/issues'
+                        }
+
+                        licenses {
+                            license {
+                                name 'GNU Lesser Public License (GPL), Version 2.1'
+                                url 'https://www.gnu.org/licenses/old-licenses/lgpl-2.1.txt'
+                                distribution 'repo'
+                            }
+                        }
+
+                        developers {
+                            developer {
+                                id 'chicken-bones'
+                                name 'chicken-bones'
+                                roles { role 'developer' }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
