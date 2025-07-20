@@ -20,6 +20,7 @@ import net.minecraft.client.renderer.vertex.VertexFormat;
 import net.minecraft.client.resources.IResource;
 import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.item.Item;
+import net.minecraft.launchwrapper.Launch;
 import net.minecraft.util.JsonUtils;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.client.event.ModelBakeEvent;
@@ -80,7 +81,7 @@ public class CCBlockStateLoader {
             Path filePath = null;
             String toResolve = "/assets/" + mod.getModId() + "/cc_blockstates/_factories.json";
             if (mod.getSource().isFile()) {
-                fs = FileSystems.newFileSystem(mod.getSource().toPath(), null);
+                fs = FileSystems.newFileSystem(mod.getSource().toPath(), Launch.classLoader);
                 filePath = fs.getPath(toResolve);
             } else if (mod.getSource().isDirectory()) {
                 filePath = mod.getSource().toPath().resolve(toResolve);
@@ -243,7 +244,7 @@ public class CCBlockStateLoader {
     }
 
     private static ResourceLocation getBlockStateLocation(ResourceLocation location) {
-        return new ResourceLocation(location.getResourceDomain(), "cc_blockstates/" + location.getResourcePath() + ".json");
+        return new ResourceLocation(location.getNamespace(), "cc_blockstates/" + location.getPath() + ".json");
     }
 
     private static boolean canLoad(IResourceManager resourceManager, ResourceLocation location) {
@@ -547,12 +548,12 @@ public class CCBlockStateLoader {
         private final String variant;
 
         public WrappedMRL(ModelResourceLocation modelResourceLocation) {
-            super(modelResourceLocation.getResourceDomain(), modelResourceLocation.getResourcePath());
+            super(modelResourceLocation.getNamespace(), modelResourceLocation.getPath());
             variant = modelResourceLocation.getVariant();
         }
 
         public ModelResourceLocation to() {
-            return new ModelResourceLocation(getResourceDomain() + ":" + getResourcePath(), variant);
+            return new ModelResourceLocation(getNamespace() + ":" + getPath(), variant);
         }
 
         public static WrappedMRL from(ModelResourceLocation loc) {

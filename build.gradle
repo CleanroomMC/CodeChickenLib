@@ -1,152 +1,231 @@
-buildscript {
-    repositories {
-        jcenter()
-        maven {
-            name = "forge"
-            url = "http://files.minecraftforge.net/maven"
+import org.jetbrains.changelog.Changelog
+
+plugins {
+    id 'java'
+    id 'java-library'
+    id 'maven-publish'
+    id 'com.gradleup.shadow' version '9.0.0-rc1' // Remove this line and shadowJar task if you don't need shadow
+    id 'org.jetbrains.changelog' version '2.2.1'
+    id 'xyz.wagyourtail.unimined' version '1.4.1'
+}
+
+apply from: 'gradle/scripts/helpers.gradle'
+
+// Early Assertions
+assertProperty 'mod_version'
+assertProperty 'root_package'
+assertProperty 'mod_id'
+assertProperty 'mod_name'
+
+if (propertyBool('generate_reference_class')) {
+    generateReferenceClass()
+}
+
+assertSubProperties 'use_access_transformer', 'access_transformer_locations'
+assertSubProperties 'is_coremod', 'coremod_includes_mod', 'coremod_plugin_class_name'
+assertSubProperties 'use_asset_mover', 'asset_mover_version'
+
+setDefaultProperty 'generate_sources_jar', true, false
+setDefaultProperty 'generate_javadocs_jar', true, false
+setDefaultProperty 'minecraft_username', true, 'Developer'
+setDefaultProperty 'extra_jvm_args', false, ''
+
+version = propertyString('mod_version')
+group = propertyString('root_package')
+
+base {
+    archivesName.set(propertyString('mod_id'))
+}
+
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(21))
+    }
+    if (propertyBool('generate_sources_jar')) {
+        withSourcesJar()
+    }
+    if (propertyBool('generate_javadocs_jar')) {
+        withJavadocJar()
+    }
+}
+
+configurations {
+    embed
+    contain
+    implementation.extendsFrom(embed)
+    implementation.extendsFrom(contain)
+}
+
+unimined.minecraft {
+    version "1.12.2"
+
+    mappings {
+        mcp("stable", "39-1.12")
+    }
+
+    cleanroom {
+        if (propertyBool('use_access_transformer')) {
+            accessTransformer "${rootProject.projectDir}/src/main/resources/" +  propertyString('access_transformer_locations')
+        }
+        loader "0.3.10-alpha"
+        runs.auth.username = minecraft_username
+        runs.all {
+            if (hasProperty("extra_jvm_args")) {
+                jvmArgs(propertyString('extra_jvm_args'))
+            }
+            if (propertyBool('enable_foundation_debug')) {
+                var map = getSystemProperties()
+                map.put("foundation.dump", "true")
+                map.put("foundation.verbose", "true")
+            }
+            return
         }
     }
-    dependencies {
-        classpath 'net.minecraftforge.gradle:ForgeGradle:2.3-SNAPSHOT'
+
+
+}
+
+repositories {
+    maven {
+        name 'CleanroomMC Maven'
+        url 'https://maven.cleanroommc.com'
     }
-}
-
-apply plugin: 'net.minecraftforge.gradle.forge'
-apply plugin: 'maven'
-
-group = "codechicken" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
-archivesBaseName = "CodeChickenLib"
-
-targetCompatibility = "1.8"
-sourceCompatibility = "1.8"
-
-// Define properties file
-ext.configFile = file "build.properties"
-
-configFile.withReader {
-    // Load config.  It shall from now be referenced as simply config or project.config
-    def prop = new Properties()
-    prop.load(it)
-    project.ext.config = new ConfigSlurper().parse prop
-}
-
-version = "${project.config.mod_version}." + (System.getenv("BUILD_NUMBER") ?: "1")
-
-println config.mc_version + "-" + config.forge_version
-// Setup the forge minecraft plugin data. Specify the preferred forge/minecraft version here
-minecraft {
-    version = config.mc_version + "-" + config.forge_version
-    mappings = config.mappings
-    runDir = "run"
-    replace '${mod_version}', project.config.mod_version
-    makeObfSourceJar = false
 }
 
 dependencies {
-    testCompile 'junit:junit:4.12'
+    if (propertyBool('use_asset_mover')) {
+        implementation "com.cleanroommc:assetmover:${propertyString('asset_mover_version')}"
+    }
+    if (propertyBool('enable_junit_testing')) {
+        testImplementation 'org.junit.jupiter:junit-jupiter:5.7.1'
+        testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    }
 }
 
-processResources {
-    inputs.property "version", project.version
-    inputs.property "mc_version", project.config.mc_version
+apply from: 'gradle/scripts/dependencies.gradle'
 
-    from(sourceSets.main.resources.srcDirs) {
-        include 'mcmod.info'
-        expand 'version': project.version, 'mc_version': project.config.mc_version
+processResources {
+
+    inputs.property 'mod_id', propertyString('mod_id')
+    inputs.property 'mod_name', propertyString('mod_name')
+    inputs.property 'mod_version', propertyString('mod_version')
+    inputs.property 'mod_description', propertyString('mod_description')
+    inputs.property 'mod_authors', "${propertyStringList('mod_authors', ',').join(', ')}"
+    inputs.property 'mod_credits', propertyString('mod_credits')
+    inputs.property 'mod_url', propertyString('mod_url')
+    inputs.property 'mod_update_json', propertyString('mod_update_json')
+    inputs.property 'mod_logo_path', propertyString('mod_logo_path')
+
+    def filterList = ['mcmod.info', 'pack.mcmeta']
+
+    filesMatching(filterList) { fcd ->
+        fcd.expand(
+                'mod_id': propertyString('mod_id'),
+                'mod_name': propertyString('mod_name'),
+                'mod_version': propertyString('mod_version'),
+                'mod_description': propertyString('mod_description'),
+                'mod_authors': "${propertyStringList('mod_authors', ',').join(', ')}",
+                'mod_credits': propertyString('mod_credits'),
+                'mod_url': propertyString('mod_url'),
+                'mod_update_json': propertyString('mod_update_json'),
+                'mod_logo_path': propertyString('mod_logo_path'),
+        )
     }
+
     rename '(.+_at.cfg)', 'META-INF/$1'
 }
 
-version = "${project.minecraft.version}-${project.version}"
-def commonManifest = {
-    attributes 'FMLAT': 'ccl_at.cfg'
-}
-
 jar {
-    classifier = 'universal'
-    manifest commonManifest
-}
-
-task deobfJar(type: Jar) {
-    from sourceSets.main.output
-    classifier = 'deobf'
-    manifest commonManifest
-}
-
-task srcJar(type: Jar) {
-    from sourceSets.main.allSource
-    classifier = 'sources'
-    manifest commonManifest
-}
-
-task signJar(type: SignJar, dependsOn: reobfJar) {
-    onlyIf { // Skip the task if our secret data isn't available
-        project.hasProperty('keyStore')
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    if (configurations.contain.size() > 0) {
+        into('/') {
+            from configurations.contain
+        }
     }
-
-    if (project.hasProperty('keyStore')) {
-        keyStore = project.keyStore // This needs to be a path to the keystore file
-        alias = project.keyStoreAlias
-        storePass = project.keyStorePass
-        keyPass = project.keyStoreKeyPass
-        inputFile = jar.archivePath
-        outputFile = jar.archivePath
-    }
-}
-
-build.dependsOn signJar
-
-// Tell the artifact system about our extra jars
-artifacts {
-    archives deobfJar
-    archives srcJar
-}
-
-// Configure an upload task.
-uploadArchives {
-    repositories {
-        mavenDeployer {
-            if (project.hasProperty("local_maven")) {
-                repository(url: "file://${local_maven}")
-                pom {
-                    groupId = project.group
-                    // Force the maven upload to use the <mcversion>-<version> syntax preferred at files
-                    artifactId = project.archivesBaseName
-                    project {
-                        name project.archivesBaseName
-                        packaging 'jar'
-                        description 'CodeChickenLib'
-                        url 'https://github.com/TheCBProject/CodeChickenLib'
-
-                        scm {
-                            url 'https://github.com/TheCBProject/CodeChickenLib'
-                            connection 'scm:git:git://github.com/TheCBProject/CodeChickenLib.git'
-                            developerConnection 'scm:git:git@github.com:TheCBProject/CodeChickenLib.git'
-                        }
-
-                        issueManagement {
-                            system 'github'
-                            url 'https://github.com/TheCBProject/CodeChickenLib/issues'
-                        }
-
-                        licenses {
-                            license {
-                                name 'GNU Lesser Public License (GPL), Version 2.1'
-                                url 'https://www.gnu.org/licenses/old-licenses/lgpl-2.1.txt'
-                                distribution 'repo'
-                            }
-                        }
-
-                        developers {
-                            developer {
-                                id 'chicken-bones'
-                                name 'chicken-bones'
-                                roles { role 'developer' }
-                            }
-                        }
-                    }
+    doFirst{
+        manifest {
+            def attribute_map = [:]
+            attribute_map['ModType'] = "CRL"
+            if (configurations.contain.size() > 0) {
+                attribute_map['ContainedDeps'] = configurations.contain.collect { it.name }.join(' ')
+                attribute_map['NonModDeps'] = true
+            }
+            if (propertyBool('is_coremod')) {
+                attribute_map['FMLCorePlugin'] = propertyString('coremod_plugin_class_name')
+                if (propertyBool('coremod_includes_mod')) {
+                    attribute_map['FMLCorePluginContainsFMLMod'] = true
                 }
             }
+            if (propertyBool('use_access_transformer')) {
+                attribute_map['FMLAT'] = propertyString('access_transformer_locations')
+            }
+            attributes(attribute_map)
+        }
+    }
+    if (propertyBool('enable_shadow')) {
+        finalizedBy(shadowJar)
+    }
+}
+
+tasks.remapJar {
+    doFirst {
+        logging.captureStandardOutput LogLevel.INFO
+    }
+    doLast {
+        logging.captureStandardOutput LogLevel.QUIET
+    }
+}
+
+shadowJar {
+    configurations = [project.configurations.shadow]
+    archiveClassifier = "shadow"
+}
+
+compileTestJava {
+    sourceCompatibility = targetCompatibility = JavaVersion.VERSION_21
+}
+
+test {
+    useJUnitPlatform()
+    javaLauncher.set(javaToolchains.launcherFor {
+        languageVersion = JavaLanguageVersion.of(21)
+    })
+    if (propertyBool('show_testing_output')) {
+        testLogging {
+            showStandardStreams = true
         }
     }
 }
+
+String parserChangelog() {
+    if (!file('CHANGELOG.md').exists()) {
+        throw new GradleException('publish_with_changelog is true, but CHANGELOG.md does not exist in the workspace!')
+    }
+    String parsedChangelog = changelog.renderItem(
+            changelog.get(propertyString('mod_version')).withHeader(false).withEmptySections(false),
+            Changelog.OutputType.MARKDOWN)
+    if (parsedChangelog.isEmpty()) {
+        throw new GradleException('publish_with_changelog is true, but the changelog for the latest version is empty!')
+    }
+    return parsedChangelog
+}
+
+def generateReferenceClass() {
+    var target = new File("${rootProject.projectDir}/src/main/java/${root_package.replace('.', '/')}/Reference.java")
+    var template = new File("${rootProject.projectDir}/template/Reference.java")
+    var replaceMap = [$package : "${root_package}", $mod_id : mod_id, $mod_name : mod_name, $mod_version : mod_version]
+    target.withWriter { var writer ->
+        template.eachLine { var line ->
+            replaceMap.each {if (line.contains(it.key)) line = line.replace(it.key, it.value)}
+            writer.write(line + "\n");
+        }
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+apply from: 'gradle/scripts/publishing.gradle'
+apply from: 'gradle/scripts/extra.gradle'

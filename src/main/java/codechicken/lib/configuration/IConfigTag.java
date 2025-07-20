@@ -57,7 +57,7 @@ public interface IConfigTag<E extends IConfigTag> extends IConfigValue<E>, ISeri
      *
      * @return The name for localization.
      */
-    String getUnlocalizedName();
+    String getTranslationKey();
 
     /**
      * If this tag is dirty.

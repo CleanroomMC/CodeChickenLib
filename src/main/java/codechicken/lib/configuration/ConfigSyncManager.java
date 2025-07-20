@@ -108,7 +108,7 @@ public class ConfigSyncManager {
             SyncState master = SyncState.create(parent);
             Map<String, IConfigTag<IConfigTag>> lookup = new HashMap<>();
             for (IConfigTag<IConfigTag> tag: master.syncTags) {
-                lookup.put(tag.getUnlocalizedName(), tag);
+                lookup.put(tag.getTranslationKey(), tag);
             }
             int numTags = in.readVarInt();
             for (int i = 0; i < numTags; i++) {
@@ -131,12 +131,12 @@ public class ConfigSyncManager {
             SyncState master = SyncState.create(parent);
             Map<String, IConfigTag<IConfigTag>> lookup = new HashMap<>();
             for (IConfigTag<IConfigTag> tag: master.syncTags) {
-                lookup.put(tag.getUnlocalizedName(), tag);
+                lookup.put(tag.getTranslationKey(), tag);
             }
             for (IConfigTag<IConfigTag> tag: syncTags) {
-                IConfigTag<IConfigTag> found = lookup.get(tag.getUnlocalizedName());
+                IConfigTag<IConfigTag> found = lookup.get(tag.getTranslationKey());
                 if (found == null) {
-                    throw new RuntimeException("Unable to revert config state, tag no longer exists.. " + tag.getUnlocalizedName());
+                    throw new RuntimeException("Unable to revert config state, tag no longer exists.. " + tag.getTranslationKey());
                 }
                 found.copyFrom(tag);
             }
@@ -150,7 +150,7 @@ public class ConfigSyncManager {
         public void write(MCDataOutput out) {
             out.writeVarInt(syncTags.size());
             for (IConfigTag<?> tag: syncTags) {
-                out.writeString(tag.getUnlocalizedName());
+                out.writeString(tag.getTranslationKey());
                 tag.write(out);
             }
         }

@@ -73,7 +73,7 @@ public class ProxyClient extends Proxy {
 
         RenderingRegistry.registerEntityRenderingHandler(DummyEntity.class, manager -> {
             sanitizeEntityRenderers(manager);
-            return new Render<DummyEntity>(manager) {
+            return new Render<>(manager) {
                 @Override
                 protected ResourceLocation getEntityTexture(DummyEntity entity) {
                     return null;

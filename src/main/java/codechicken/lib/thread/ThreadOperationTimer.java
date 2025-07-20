@@ -56,10 +56,11 @@ public class ThreadOperationTimer extends Thread {
             return;//don't run this thread in a source environment
         }
 
-        while (thread.isAlive()) {
+        while (!thread.isInterrupted()) {
             synchronized (this) {
                 if (operation != null && System.currentTimeMillis() - opTime > limit) {
-                    thread.stop(new TimeoutException("Operation took too long", operation));
+                    thread.interrupt();
+                    throw new TimeoutException("Operation took too long", operation);
                 }
             }
             try {

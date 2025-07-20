@@ -61,12 +61,12 @@ public enum EnumColour implements IStringSerializable {
         return woolOreName;
     }
 
-    public String getUnlocalizedName() {
+    public String getTranslationKey() {
         return unlocalizedName;
     }
 
     public String getLocalizedName() {
-        return I18n.translateToLocal(getUnlocalizedName());
+        return I18n.translateToLocal(getTranslationKey());
     }
 
     public int getWoolMeta() {

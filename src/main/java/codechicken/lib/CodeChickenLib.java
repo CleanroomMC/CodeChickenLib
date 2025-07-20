@@ -27,7 +27,7 @@ public class CodeChickenLib {
 
     public static final String MOD_ID = "codechickenlib";
     public static final String MOD_NAME = "CodeChicken Lib";
-    public static final String MOD_VERSION = "${mod_version}";
+    public static final String MOD_VERSION = Reference.VERSION;
     public static final String MOD_VERSION_DEP = "required-after:codechickenlib@[" + MOD_VERSION + ",);";
     public static final String MC_VERSION = "1.12";
     public static final String MC_VERSION_DEP = "[" + MC_VERSION + "]";

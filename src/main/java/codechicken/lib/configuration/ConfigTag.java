@@ -294,7 +294,7 @@ public class ConfigTag implements IConfigTag<ConfigTag> {
     }
 
     @Override
-    public String getUnlocalizedName() {
+    public String getTranslationKey() {
         List<String> list = new ArrayList<>();
         ConfigTag parent = this;
         while ((parent = parent.getParent()) != null) {

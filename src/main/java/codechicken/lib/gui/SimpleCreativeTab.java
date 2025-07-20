@@ -71,7 +71,7 @@ public class SimpleCreativeTab extends CreativeTabs {
 
     @Override
     @Nonnull
-    public ItemStack getTabIconItem() {
+    public ItemStack createIcon() {
         return stackSupplier.get();
     }
 }
