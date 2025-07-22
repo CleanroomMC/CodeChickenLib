@@ -1,5 +1,7 @@
 package codechicken.lib.reflect;
 
+import com.cleanroommc.hackery.ReflectionHackery;
+import net.minecraftforge.common.util.EnumHelper;
 import org.objectweb.asm.Type;
 
 import java.lang.reflect.*;
@@ -232,7 +234,7 @@ public class ReflectionManager {
     public static <R> R getField(ObfMapping mapping, Object instance, Class<R> clazz) {
         try {
             Field field = getField(mapping);
-            return (R) field.get(instance);
+            return (R) ReflectionHackery.getField(field, instance);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -282,12 +284,9 @@ public class ReflectionManager {
         if ((field.getModifiers() & Modifier.FINAL) == 0) {
             return;
         }
+
         try {
-            if (modifiersField == null) {
-                modifiersField = getField(new ObfMapping("java/lang/reflect/Field", "modifiers"));
-                modifiersField.setAccessible(true);
-            }
-            modifiersField.set(field, field.getModifiers() & ~Modifier.FINAL);
+            ReflectionHackery.stripFieldOfFinalModifier(field);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

@@ -1,27 +1,47 @@
 package codechicken.lib.reflect;
 
+import codechicken.lib.CodeChickenLib;
+import codechicken.lib.internal.CCLLog;
 import com.google.common.base.Charsets;
 import com.google.common.base.Objects;
 import com.google.common.io.LineProcessor;
 import com.google.common.io.Resources;
 import net.minecraft.launchwrapper.Launch;
 import net.minecraftforge.fml.common.asm.transformers.deobf.FMLDeobfuscatingRemapper;
+import net.minecraftforge.fml.common.launcher.FMLTweaker;
+import net.minecraftforge.fml.relauncher.CoreModManager;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.objectweb.asm.commons.Remapper;
 
 import javax.annotation.Nonnull;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.reflect.Field;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 public class ObfMapping {
 
     public static class ObfRemapper extends Remapper {
 
-        private HashMap<String, String> fields = new HashMap<>();
-        private HashMap<String, String> funcs = new HashMap<>();
+        private final HashMap<String, String> fields = new HashMap<>();
+        private final HashMap<String, String> funcs = new HashMap<>();
 
         @SuppressWarnings ("unchecked")
         public ObfRemapper() {
@@ -93,9 +113,53 @@ public class ObfMapping {
 
         public static File[] getConfFiles() {
 
+            File notchSrg;
+            File csvDir;
+            File mappings = new File(Launch.minecraftHome, "mappings");
             // check for GradleStart system vars
-            File notchSrg = new File(System.getProperty("net.minecraftforge.gradle.GradleStart.srg.notch-srg"));
-            File csvDir = new File(System.getProperty("net.minecraftforge.gradle.GradleStart.csvDir"));
+            String notchSrgPath = System.getProperty("net.minecraftforge.gradle.GradleStart.srg.notch-srg");
+            String csvDirPath = System.getProperty("net.minecraftforge.gradle.GradleStart.csvDir");
+
+            if (notchSrgPath != null) {
+                notchSrg = new File(notchSrgPath);
+            } else {
+                mappings.mkdir();
+                notchSrg = new File(mappings, "deobf_data-1.12.2.tsrg");
+                try {
+                    JarFile universalJar = new JarFile(new File(FMLTweaker.getJarLocation()));
+                    JarEntry entry = universalJar.getJarEntry("deobf_data-1.12.2.tsrg");
+                    IOUtils.copy(universalJar.getInputStream(entry), new FileOutputStream(notchSrg));
+                    universalJar.close();
+                } catch (IOException e) {
+                    CCLLog.logger.fatal("Failed to get mapping file from universal jar.", e);
+                }
+            }
+
+            if (csvDirPath != null) {
+                csvDir = new File(csvDirPath);
+            } else {
+                mappings.mkdir();
+                csvDir = mappings;
+                File mappingZip = new File(mappings, "mcp_stable-39-1.12.zip");
+                try {
+                    FileUtils.copyURLToFile(new URI("https://maven.minecraftforge.net/de/oceanlabs/mcp/mcp_stable/39-1.12/mcp_stable-39-1.12.zip").toURL(), mappingZip);
+                    try (ZipFile zipFile = new ZipFile(mappingZip)) {
+                        Enumeration<? extends ZipEntry> entries = zipFile.entries();
+                        while (entries.hasMoreElements()) {
+                            ZipEntry entry = entries.nextElement();
+                            File entryDestination = new File(mappings, entry.getName());
+                            try (InputStream in = zipFile.getInputStream(entry);
+                                 OutputStream out = Files.newOutputStream(entryDestination.toPath())
+                            ) {
+                                IOUtils.copy(in, out);
+                            }
+
+                        }
+                    }
+                } catch (URISyntaxException | IOException e) {
+                    CCLLog.logger.fatal("Failed to download mcp mapping file.", e);
+                }
+            }
 
             if (notchSrg.exists() && csvDir.exists()) {
                 File fieldCsv = new File(csvDir, "fields.csv");
@@ -109,17 +173,17 @@ public class ObfMapping {
             throw new RuntimeException("Failed to grab mappings from GradleStart args.");
         }
 
-        private HashMap<String, String> fields = new HashMap<>();
-        private HashMap<String, String> funcs = new HashMap<>();
+        private final HashMap<String, String> fields = new HashMap<>();
+        private final HashMap<String, String> funcs = new HashMap<>();
 
         public MCPRemapper() {
 
             File[] mappings = getConfFiles();
             try {
-                Resources.readLines(mappings[1].toURI().toURL(), Charsets.UTF_8, this);
-                Resources.readLines(mappings[2].toURI().toURL(), Charsets.UTF_8, this);
+                Resources.readLines(mappings[1].toURI().toURL(), StandardCharsets.UTF_8, this);
+                Resources.readLines(mappings[2].toURI().toURL(), StandardCharsets.UTF_8, this);
             } catch (IOException e) {
-                e.printStackTrace();
+                CCLLog.logger.fatal("Failed to read mapping csv files.");
             }
         }
 
@@ -169,12 +233,7 @@ public class ObfMapping {
     public static final boolean obfuscated;
 
     static {
-        boolean obf = true;
-        try {
-            obf = Launch.classLoader.getClassBytes("net.minecraft.world.World") == null;
-        } catch (IOException ignored) {
-        }
-        obfuscated = obf;
+        obfuscated = !(boolean) Launch.blackboard.get("fml.deobfuscatedEnvironment");
     }
 
     public static void init() {
@@ -259,11 +318,10 @@ public class ObfMapping {
     @Override
     public boolean equals(Object obj) {
 
-        if (!(obj instanceof ObfMapping)) {
+        if (!(obj instanceof ObfMapping desc)) {
             return false;
         }
 
-        ObfMapping desc = (ObfMapping) obj;
         return s_owner.equals(desc.s_owner) && s_name.equals(desc.s_name) && s_desc.equals(desc.s_desc);
     }
 
@@ -276,10 +334,10 @@ public class ObfMapping {
     @Override
     public String toString() {
 
-        if (s_name.length() == 0) {
+        if (s_name.isEmpty()) {
             return "[" + s_owner + "]";
         }
-        if (s_desc.length() == 0) {
+        if (s_desc.isEmpty()) {
             return "[" + s_owner + "." + s_name + "]";
         }
         return "[" + (isMethod() ? methodDesc() : fieldDesc()) + "]";
@@ -297,7 +355,7 @@ public class ObfMapping {
 
     public boolean isClass() {
 
-        return s_name.length() == 0;
+        return s_name.isEmpty();
     }
 
     public boolean isMethod() {
@@ -326,7 +384,7 @@ public class ObfMapping {
 
         if (isMethod()) {
             s_desc = mapper.mapMethodDesc(s_desc);
-        } else if (s_desc.length() > 0) {
+        } else if (!s_desc.isEmpty()) {
             s_desc = mapper.mapDesc(s_desc);
         }
 
