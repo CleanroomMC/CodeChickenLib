@@ -10,12 +10,14 @@ import net.minecraft.launchwrapper.Launch;
 import net.minecraftforge.fml.common.asm.transformers.deobf.FMLDeobfuscatingRemapper;
 import net.minecraftforge.fml.common.launcher.FMLTweaker;
 import net.minecraftforge.fml.relauncher.CoreModManager;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.objectweb.asm.commons.Remapper;
 
 import javax.annotation.Nonnull;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -125,13 +127,15 @@ public class ObfMapping {
             } else {
                 mappings.mkdir();
                 notchSrg = new File(mappings, "deobf_data-1.12.2.tsrg");
-                try {
-                    JarFile universalJar = new JarFile(new File(FMLTweaker.getJarLocation()));
-                    JarEntry entry = universalJar.getJarEntry("deobf_data-1.12.2.tsrg");
-                    IOUtils.copy(universalJar.getInputStream(entry), new FileOutputStream(notchSrg));
-                    universalJar.close();
-                } catch (IOException e) {
-                    CCLLog.logger.fatal("Failed to get mapping file from universal jar.", e);
+                if (!notchSrg.exists()) {
+                    try {
+                        JarFile universalJar = new JarFile(new File(FMLTweaker.getJarLocation()));
+                        JarEntry entry = universalJar.getJarEntry("deobf_data-1.12.2.tsrg");
+                        IOUtils.copy(universalJar.getInputStream(entry), new FileOutputStream(notchSrg));
+                        universalJar.close();
+                    } catch (IOException e) {
+                        CCLLog.logger.fatal("Failed to get mapping file from universal jar.", e);
+                    }
                 }
             }
 
@@ -142,7 +146,10 @@ public class ObfMapping {
                 csvDir = mappings;
                 File mappingZip = new File(mappings, "mcp_stable-39-1.12.zip");
                 try {
-                    FileUtils.copyURLToFile(new URI("https://maven.minecraftforge.net/de/oceanlabs/mcp/mcp_stable/39-1.12/mcp_stable-39-1.12.zip").toURL(), mappingZip);
+                    if (!(mappingZip.exists() && DigestUtils.sha256Hex(new FileInputStream(mappingZip))
+                                    .equals("13a31f28c11f8f395ffe7e8563ade459f5a0ee46493abbbde3ce6e9493ac4152"))) {
+                        FileUtils.copyURLToFile(new URI("https://maven.minecraftforge.net/de/oceanlabs/mcp/mcp_stable/39-1.12/mcp_stable-39-1.12.zip").toURL(), mappingZip);
+                    }
                     try (ZipFile zipFile = new ZipFile(mappingZip)) {
                         Enumeration<? extends ZipEntry> entries = zipFile.entries();
                         while (entries.hasMoreElements()) {
@@ -156,6 +163,7 @@ public class ObfMapping {
 
                         }
                     }
+
                 } catch (URISyntaxException | IOException e) {
                     CCLLog.logger.fatal("Failed to download mcp mapping file.", e);
                 }
