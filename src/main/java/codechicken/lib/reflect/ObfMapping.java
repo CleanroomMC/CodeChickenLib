@@ -49,12 +49,8 @@ public class ObfMapping {
         public ObfRemapper() {
 
             try {
-                Field rawFieldMapsField = FMLDeobfuscatingRemapper.class.getDeclaredField("rawFieldMaps");
-                Field rawMethodMapsField = FMLDeobfuscatingRemapper.class.getDeclaredField("rawMethodMaps");
-                rawFieldMapsField.setAccessible(true);
-                rawMethodMapsField.setAccessible(true);
-                Map<String, Map<String, String>> rawFieldMaps = (Map<String, Map<String, String>>) rawFieldMapsField.get(FMLDeobfuscatingRemapper.INSTANCE);
-                Map<String, Map<String, String>> rawMethodMaps = (Map<String, Map<String, String>>) rawMethodMapsField.get(FMLDeobfuscatingRemapper.INSTANCE);
+                Map<String, Map<String, String>> rawFieldMaps = FMLDeobfuscatingRemapper.INSTANCE.getRawFieldMaps();
+                Map<String, Map<String, String>> rawMethodMaps = FMLDeobfuscatingRemapper.INSTANCE.getRawMethodMaps();
 
                 if (rawFieldMaps == null) {
                     throw new IllegalStateException("codechicken.lib.asm.ObfMapping loaded too early. Make sure all references are in or after the asm transformer load stage");
@@ -118,6 +114,7 @@ public class ObfMapping {
             File notchSrg;
             File csvDir;
             File mappings = new File(Launch.minecraftHome, "mappings");
+            File mcpSrg = new File(Launch.minecraftHome, ".gradle/unimined/local/mappings/srg2mcp.tsrg");
             // check for GradleStart system vars
             String notchSrgPath = System.getProperty("net.minecraftforge.gradle.GradleStart.srg.notch-srg");
             String csvDirPath = System.getProperty("net.minecraftforge.gradle.GradleStart.csvDir");
@@ -139,7 +136,7 @@ public class ObfMapping {
                 }
             }
 
-            if (csvDirPath != null) {
+            if (csvDirPath != null && !mcpSrg.exists()) {
                 csvDir = new File(csvDirPath);
             } else {
                 mappings.mkdir();
@@ -176,6 +173,8 @@ public class ObfMapping {
                 if (notchSrg.exists() && fieldCsv.exists() && methodCsv.exists()) {
                     return new File[] { notchSrg, fieldCsv, methodCsv };
                 }
+            } else if (notchSrg.exists() && mcpSrg.exists()) {
+                return new File[] { notchSrg, mcpSrg };
             }
 
             throw new RuntimeException("Failed to grab mappings from GradleStart args.");
@@ -187,11 +186,19 @@ public class ObfMapping {
         public MCPRemapper() {
 
             File[] mappings = getConfFiles();
-            try {
-                Resources.readLines(mappings[1].toURI().toURL(), StandardCharsets.UTF_8, this);
-                Resources.readLines(mappings[2].toURI().toURL(), StandardCharsets.UTF_8, this);
-            } catch (IOException e) {
-                CCLLog.logger.fatal("Failed to read mapping csv files.");
+            if (mappings.length == 3) {
+                try {
+                    Resources.readLines(mappings[1].toURI().toURL(), StandardCharsets.UTF_8, this);
+                    Resources.readLines(mappings[2].toURI().toURL(), StandardCharsets.UTF_8, this);
+                } catch (IOException e) {
+                    CCLLog.logger.fatal("Failed to read mapping csv files.");
+                }
+            } else {
+                try {
+                    Resources.readLines(mappings[1].toURI().toURL(), StandardCharsets.UTF_8, this);
+                } catch (IOException e) {
+                    CCLLog.logger.fatal("Failed to read mapping tsrg files.");
+                }
             }
         }
 
@@ -211,13 +218,23 @@ public class ObfMapping {
 
         @Override
         public boolean processLine(@Nonnull String line) throws IOException {
-
-            int i = line.indexOf(',');
-            String srg = line.substring(0, i);
-            int i2 = i + 1;
-            i = line.indexOf(',', i2);
-            String mcp = line.substring(i2, i);
-            (srg.startsWith("func") ? funcs : fields).put(srg, mcp);
+            if (line.contains(",")) {
+                int i = line.indexOf(',');
+                String srg = line.substring(0, i);
+                int i2 = i + 1;
+                i = line.indexOf(',', i2);
+                String mcp = line.substring(i2, i);
+                (srg.startsWith("func") ? funcs : fields).put(srg, mcp);
+            } else {
+                if (line.startsWith("\t")) {
+                    String[] values = line.substring(1).split(" ");
+                    if (values.length == 3) {
+                        funcs.put(values[0], values[2]);
+                    } else if (values.length == 2) {
+                        fields.put(values[0], values[1]);
+                    }
+                }
+            }
             return true;
         }
 
