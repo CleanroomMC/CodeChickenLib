@@ -45,7 +45,6 @@ public class ObfMapping {
         private final HashMap<String, String> fields = new HashMap<>();
         private final HashMap<String, String> funcs = new HashMap<>();
 
-        @SuppressWarnings ("unchecked")
         public ObfRemapper() {
 
             try {

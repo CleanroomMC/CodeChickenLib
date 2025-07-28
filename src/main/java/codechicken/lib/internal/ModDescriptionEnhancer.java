@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.Strictness;
 import com.google.gson.stream.JsonReader;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.fml.common.FMLCommonHandler;
@@ -13,6 +14,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.Level;
 
 import java.io.*;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.*;
@@ -38,7 +40,7 @@ public class ModDescriptionEnhancer {
         if (marker.exists()) {
             try {
                 FileReader reader = new FileReader(marker);
-                lastDownload = Long.valueOf(IOUtils.toString(reader).trim());
+                lastDownload = Long.parseLong(IOUtils.toString(reader).trim());
                 IOUtils.closeQuietly(reader);
             } catch (IOException | NumberFormatException e) {
                 CCLLog.log(Level.WARN, "Error reading supporters marker file. Deleting..");
@@ -69,7 +71,7 @@ public class ModDescriptionEnhancer {
                     if (!supporters_file.exists()) {
                         supporters_file.createNewFile();
                     }
-                    URL url = new URL("http://chickenbones.net/Files/supporters.json");
+                    URL url = new URI("http://chickenbones.net/Files/supporters.json").toURL();
                     URLConnection connection = url.openConnection();
                     connection.setConnectTimeout(5000);
                     connection.setReadTimeout(5000);
@@ -82,7 +84,7 @@ public class ModDescriptionEnhancer {
                 parse(supporters_file);
                 applySupporters();
             } catch (Exception e) {
-                e.printStackTrace();
+                CCLLog.logger.error(e.getMessage());
             }
         });
         thread.setDaemon(true);
@@ -92,9 +94,8 @@ public class ModDescriptionEnhancer {
 
     private static void parse(File supporters_file) throws IOException {
         JsonReader reader = new JsonReader(new FileReader(supporters_file));
-        reader.setLenient(true);
-        JsonParser parser = new JsonParser();
-        JsonArray array = parser.parse(reader).getAsJsonArray();
+        reader.setStrictness(Strictness.LENIENT);
+        JsonArray array = JsonParser.parseReader(reader).getAsJsonArray();
         for (JsonElement element : array) {
             JsonObject object = element.getAsJsonObject();
             String mod = object.get("mod").getAsString();
