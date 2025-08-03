@@ -26,42 +26,41 @@ if (propertyBool('publish_to_maven')) {
                 // Add this line (change the task name):
                 // artifacts task_name
                 pom {
-                    groupId = project.group
+                    groupId = "codechicken"
                     // Force the maven upload to use the <mcversion>-<version> syntax preferred at files
-                    artifactId = project.archivesBaseName
-                    project {
-                        name project.archivesBaseName
-                        packaging 'jar'
-                        description 'CodeChickenLib'
-                        url 'https://github.com/CleanroomMC/CodeChickenLib'
+                    artifactId = propertyString('mod_name')
 
-                        scm {
-                            url 'https://github.com/CleanroomMC/CodeChickenLib'
-                            connection 'scm:git:git://github.com/CleanroomMC/CodeChickenLib.git'
-                            developerConnection 'scm:git:git@github.com:CleanroomMC/CodeChickenLib.git'
-                        }
+                    name = propertyString('mod_name')
+                    packaging = 'jar'
+                    description = 'CodeChickenLib'
+                    url = 'https://github.com/CleanroomMC/CodeChickenLib'
 
-                        issueManagement {
-                            system 'github'
-                            url 'https://github.com/CleanroomMC/CodeChickenLib/issues'
-                        }
+                    scm {
+                        url = 'https://github.com/CleanroomMC/CodeChickenLib'
+                        connection = 'scm:git:git://github.com/CleanroomMC/CodeChickenLib.git'
+                        developerConnection = 'scm:git:git@github.com:CleanroomMC/CodeChickenLib.git'
+                    }
 
-                        licenses {
-                            license {
-                                name 'GNU Lesser Public License (GPL), Version 2.1'
-                                url 'https://www.gnu.org/licenses/old-licenses/lgpl-2.1.txt'
-                                distribution 'repo'
-                            }
-                        }
+                    issueManagement {
+                        system = 'github'
+                        url = 'https://github.com/CleanroomMC/CodeChickenLib/issues'
+                    }
 
-                        developers {
-                            developer {
-                                id 'chicken-bones'
-                                name 'chicken-bones'
-                                roles { role 'developer' }
-                            }
+                    licenses {
+                        license {
+                            name = 'GNU Lesser Public License (GPL), Version 2.1'
+                            url = 'https://www.gnu.org/licenses/old-licenses/lgpl-2.1.txt'
+                            distribution = 'repo'
                         }
                     }
+
+                    developers {
+                        developer {
+                            id = 'chicken-bones'
+                            name = 'chicken-bones'
+                        }
+                    }
+
                 }
             }
         }

@@ -177,10 +177,7 @@ tasks.remapJar {
     }
 }
 
-shadowJar {
-    configurations = [project.configurations.shadow]
-    archiveClassifier = "shadow"
-}
+
 
 compileTestJava {
     sourceCompatibility = targetCompatibility = JavaVersion.VERSION_21
