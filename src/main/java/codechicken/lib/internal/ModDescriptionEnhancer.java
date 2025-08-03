@@ -23,8 +23,8 @@ import java.util.Map.Entry;
 public class ModDescriptionEnhancer {
 
     private static boolean hasInit = false;
-    private static Map<String, List<String>> supporters = new HashMap<>();
-    private static Map<String, ModMetadata> mods = new HashMap<>();
+    private static final Map<String, List<String>> supporters = new HashMap<>();
+    private static final Map<String, ModMetadata> mods = new HashMap<>();
     private static long lastDownload = 0;
     private static boolean shouldDownload;
 
