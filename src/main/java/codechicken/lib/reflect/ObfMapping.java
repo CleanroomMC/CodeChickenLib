@@ -113,7 +113,7 @@ public class ObfMapping {
             File notchSrg;
             File csvDir;
             File mappings = new File(Launch.minecraftHome, "mappings");
-            File mcpSrg = new File(Launch.minecraftHome, ".gradle/unimined/local/mappings/srg2mcp.tsrg");
+            File mcpSrg = new File(Launch.minecraftHome.getParentFile().getParentFile(), ".gradle/unimined/local/mappings/srg2mcp.tsrg");
             // check for GradleStart system vars
             String notchSrgPath = System.getProperty("net.minecraftforge.gradle.GradleStart.srg.notch-srg");
             String csvDirPath = System.getProperty("net.minecraftforge.gradle.GradleStart.csvDir");
