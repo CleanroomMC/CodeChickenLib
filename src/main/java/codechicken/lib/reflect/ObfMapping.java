@@ -113,7 +113,7 @@ public class ObfMapping {
             File notchSrg;
             File csvDir;
             File mappings = new File(Launch.minecraftHome, "mappings");
-            File mcpSrg = new File(Launch.minecraftHome.getParentFile().getParentFile(), ".gradle/unimined/local/mappings/srg2mcp.tsrg");
+            String mcpSrgPath = System.getProperty("net.minecraftforge.gradle.GradleStart.srg.srg-mcp");
             // check for GradleStart system vars
             String notchSrgPath = System.getProperty("net.minecraftforge.gradle.GradleStart.srg.notch-srg");
             String csvDirPath = System.getProperty("net.minecraftforge.gradle.GradleStart.csvDir");
@@ -135,7 +135,7 @@ public class ObfMapping {
                 }
             }
 
-            if (csvDirPath != null && !mcpSrg.exists()) {
+            if (csvDirPath != null && mcpSrgPath == null) {
                 csvDir = new File(csvDirPath);
             } else {
                 mappings.mkdir();
@@ -172,8 +172,8 @@ public class ObfMapping {
                 if (notchSrg.exists() && fieldCsv.exists() && methodCsv.exists()) {
                     return new File[] { notchSrg, fieldCsv, methodCsv };
                 }
-            } else if (notchSrg.exists() && mcpSrg.exists()) {
-                return new File[] { notchSrg, mcpSrg };
+            } else if (notchSrg.exists() && mcpSrgPath != null) {
+                return new File[] { notchSrg, new File(mcpSrgPath) };
             }
 
             throw new RuntimeException("Failed to grab mappings from GradleStart args.");
