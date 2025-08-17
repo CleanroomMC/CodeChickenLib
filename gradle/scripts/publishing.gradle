@@ -28,9 +28,9 @@ if (propertyBool('publish_to_maven')) {
                 pom {
                     groupId = "codechicken"
                     // Force the maven upload to use the <mcversion>-<version> syntax preferred at files
-                    artifactId = propertyString('mod_name')
+                    artifactId = 'CodeChickenLib'
 
-                    name = propertyString('mod_name')
+                    name = 'CodeChickenLib'
                     packaging = 'jar'
                     description = 'CodeChickenLib'
                     url = 'https://github.com/CleanroomMC/CodeChickenLib'
