@@ -49,6 +49,7 @@ public class ProxyClient extends Proxy {
     public static boolean catchItemRenderExceptions;
     public static boolean attemptRecoveryOnItemRenderException;
     public static boolean messagePlayerOnRenderExceptionCaught;
+    public static boolean enableSupporterModDescEnhancer;
 
     @Override
     public void preInit() {
@@ -87,7 +88,9 @@ public class ProxyClient extends Proxy {
         super.init();
         BlockRenderingRegistry.init();
         CCRenderItem.init();
-        ModDescriptionEnhancer.init();
+        if (enableSupporterModDescEnhancer) {
+            ModDescriptionEnhancer.init();
+        }
     }
 
     @Override
@@ -141,6 +144,12 @@ public class ProxyClient extends Proxy {
                         "Messages are Rate-Limited to one per 5 seconds in the event that the exception continues."//
                 );
         messagePlayerOnRenderExceptionCaught = tag.setDefaultBoolean(true).getBoolean();
+        tag = clientTag.getTag("enableSupporterModDescEnhancer")
+                .setComment(
+                        "The default supporter json downloaded by this is invalid.",
+                        "This option can disable the whole feature so no more error in logs."
+                );
+        enableSupporterModDescEnhancer = tag.setDefaultBoolean(false).getBoolean();
 
         clientTag.save();
     }
