@@ -51,9 +51,8 @@ jobs:
           curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
 
           files: |
-            build/libs/*-@(full).jar
-            build/libs/SimpleLogic-*.jar
-            build/libs/*-@(api|sources).jar
+            build/libs/*-@(universal).jar
+            build/libs/*-@(dev|sources).jar
           loaders: forge
           game-versions: 1.12.2
           java: |
