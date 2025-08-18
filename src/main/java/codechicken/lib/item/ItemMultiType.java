@@ -38,9 +38,18 @@ public class ItemMultiType extends Item {
     }
 
     @Override
-    public ItemMultiType setTranslationKey(String unlocalizedName) {
-        super.setTranslationKey(unlocalizedName);
+    public ItemMultiType setTranslationKey(String translationKey) {
+        super.setTranslationKey(translationKey);
         return this;
+    }
+
+    /**
+     * Added for compatibility
+     * @deprecated Use setTranslationKey.
+     */
+    @Deprecated
+    public ItemMultiType setUnlocalizedName(String unlocalizedName) {
+        return setTranslationKey(unlocalizedName);
     }
 
     @Nonnull
@@ -107,6 +116,15 @@ public class ItemMultiType extends Item {
     public String getTranslationKey(ItemStack stack) {
         int meta = stack.getItemDamage();
         return getTranslationKey() + "." + names.get(meta);
+    }
+
+    /**
+     * Added for compatibility
+     * @deprecated Use getTranslationKey.
+     */
+    @Deprecated
+    public String getUnlocalizedName(ItemStack stack) {
+        return getTranslationKey(stack);
     }
 
 }
