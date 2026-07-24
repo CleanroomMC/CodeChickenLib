@@ -16,9 +16,6 @@ repositories {
 
 dependencies {
     compileOnly "com.cleanroommc:sponge-mixin:0.20.10+mixin.0.8.7"
-    if (propertyBool('enable_lwjglx')) {
-        compileOnly "com.cleanroommc:lwjglx:1.0.0"
-    }
 
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.12.0'
     testImplementation 'org.junit.vintage:junit-vintage-engine:5.12.0'

@@ -3,7 +3,7 @@ plugins {
     id 'java-library'
     id 'maven-publish'
     id 'org.jetbrains.changelog' version '2.2.1'
-    id 'xyz.wagyourtail.unimined' version '1.4.1'
+    id 'xyz.wagyourtail.unimined' version '1.4.26-kappa'
 }
 
 apply from: 'gradle/scripts/helpers.gradle'
@@ -37,7 +37,7 @@ base {
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21))
+        languageVersion.set(JavaLanguageVersion.of(25))
     }
     if (propertyBool('generate_sources_jar')) {
         withSourcesJar()
@@ -63,13 +63,13 @@ unimined.minecraft {
 
     cleanroom {
         if (propertyBool('use_access_transformer')) {
-            accessTransformer "${rootProject.projectDir}/src/main/resources/" +  propertyString('access_transformer_locations')
+            accessTransformer "${rootProject.projectDir}/src/main/resources/" +  propertyString('access_transformer_locations') as String
         }
-        loader "0.3.13-alpha"
+        loader "0.5.8-alpha+build.25"
         runs.auth.username = minecraft_username
         runs.all {
             if (hasProperty("extra_jvm_args")) {
-                jvmArgs(propertyString('extra_jvm_args'))
+                jvmArgs(propertyString('extra_jvm_args') as String)
             }
             if (propertyBool('enable_foundation_debug')) {
                 var map = getSystemProperties()
@@ -143,7 +143,8 @@ jar {
     doFirst{
         manifest {
             def attribute_map = [:]
-            attribute_map['ModType'] = "CRL"
+            attribute_map['ModType'] = 'CRL'
+            attribute_map['Lwjgl3-Aware'] = true
             if (configurations.contain.size() > 0) {
                 attribute_map['ContainedDeps'] = configurations.contain.collect { it.name }.join(' ')
                 attribute_map['NonModDeps'] = true
@@ -175,13 +176,13 @@ tasks.remapJar {
 
 
 compileTestJava {
-    sourceCompatibility = targetCompatibility = JavaVersion.VERSION_21
+    sourceCompatibility = targetCompatibility = JavaVersion.VERSION_25
 }
 
 test {
     useJUnitPlatform()
     javaLauncher.set(javaToolchains.launcherFor {
-        languageVersion = JavaLanguageVersion.of(21)
+        languageVersion = JavaLanguageVersion.of(25)
     })
     if (propertyBool('show_testing_output')) {
         testLogging {
