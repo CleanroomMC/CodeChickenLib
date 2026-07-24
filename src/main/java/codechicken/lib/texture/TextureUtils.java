@@ -260,7 +260,7 @@ public class TextureUtils {
         IBakedModel model = Minecraft.getMinecraft().getBlockRendererDispatcher().getModelForState(state);
         if (model != null) {
             List<BakedQuad> quads = model.getQuads(state, side, 0);
-            if (quads != null && quads.size() > 0) {
+            if (quads != null && !quads.isEmpty()) {
                 TextureAtlasSprite[] sprites = new TextureAtlasSprite[quads.size()];
                 for (int i = 0; i < quads.size(); i++) {
                     sprites[i] = quads.get(i).getSprite();

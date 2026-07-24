@@ -281,7 +281,8 @@ public class ModelBakery {
 
                     faceQuads.put(face, quads);
                 }
-                ModelProperties properties = new ModelProperties(true, true, null);
+                TextureAtlasSprite particle = bakery.getParticleTexture(state);
+                ModelProperties properties = new ModelProperties(true, true, particle);
                 return new PerspectiveAwareBakedModel(faceQuads, generalQuads, TransformUtils.DEFAULT_BLOCK, properties);
             }
             if (bakery instanceof ILayeredBlockBakery) {
@@ -307,7 +308,8 @@ public class ModelBakery {
                         layerFaceQuadMap.put(layer, faceQuadMap);
                     }
                 }
-                ModelProperties properties = new ModelProperties(true, true, null);
+                TextureAtlasSprite particle = bakery.getParticleTexture(state);
+                ModelProperties properties = new ModelProperties(true, true, particle);
                 return new PerspectiveAwareLayeredModel(layerFaceQuadMap, layerGeneralQuads, new PerspectiveProperties(TransformUtils.DEFAULT_BLOCK, properties), BlockRenderLayer.SOLID);
             }
         }

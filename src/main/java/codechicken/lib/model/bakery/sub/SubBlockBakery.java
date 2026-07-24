@@ -6,10 +6,12 @@ import codechicken.lib.model.bakery.generation.ILayeredBlockBakery;
 import codechicken.lib.model.bakery.generation.ISimpleBlockBakery;
 import codechicken.lib.model.bakery.key.IBlockStateKeyGenerator;
 import codechicken.lib.model.bakery.key.IItemStackKeyGenerator;
+import codechicken.lib.texture.TextureUtils;
 import codechicken.lib.texture.TextureUtils.IIconRegister;
 import com.google.common.collect.ImmutableList;
 import net.minecraft.block.Block;
 import net.minecraft.client.renderer.block.model.BakedQuad;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -20,6 +22,7 @@ import net.minecraft.world.IBlockAccess;
 import net.minecraftforge.common.property.IExtendedBlockState;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
+import org.jspecify.annotations.NonNull;
 
 import java.util.HashMap;
 import java.util.List;
@@ -83,7 +86,7 @@ public class SubBlockBakery implements ILayeredBlockBakery, IIconRegister {
 
     @Override
     @SideOnly (Side.CLIENT)
-    public List<BakedQuad> bakeLayerFace(EnumFacing face, BlockRenderLayer layer, IExtendedBlockState state) {
+    public @NonNull List<BakedQuad> bakeLayerFace(EnumFacing face, BlockRenderLayer layer, IExtendedBlockState state) {
         IBlockBakery bakery = subBakeries.get(state.getBlock().getMetaFromState(state));
         if (bakery instanceof ISimpleBlockBakery) {
             if (state.getBlock().canRenderInLayer(state, layer)) {
@@ -107,6 +110,17 @@ public class SubBlockBakery implements ILayeredBlockBakery, IIconRegister {
 
     @Override
     @SideOnly (Side.CLIENT)
+    public TextureAtlasSprite getParticleTexture(IExtendedBlockState state) {
+        IBlockBakery bakery = subBakeries.get(state.getBlock().getMetaFromState(state));
+        if (bakery == null) {
+            return TextureUtils.getMissingSprite();
+        }
+        return bakery.getParticleTexture(state);
+    }
+
+    @Override
+    @SideOnly (Side.CLIENT)
+    @NonNull
     public List<BakedQuad> bakeItemQuads(EnumFacing face, ItemStack stack) {
         IBlockBakery bakery = subBakeries.get(stack.getMetadata());
         if (bakery == null) {

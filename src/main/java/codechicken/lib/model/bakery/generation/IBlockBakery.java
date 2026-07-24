@@ -1,8 +1,10 @@
 package codechicken.lib.model.bakery.generation;
 
 import codechicken.lib.model.bakery.ModelBakery;
+import codechicken.lib.texture.TextureUtils;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockAccess;
 import net.minecraftforge.common.property.IExtendedBlockState;
@@ -25,4 +27,20 @@ public interface IBlockBakery extends IItemBakery {
      */
     @SideOnly (Side.CLIENT)
     IExtendedBlockState handleState(IExtendedBlockState state, IBlockAccess access, BlockPos pos);
+
+    /**
+     * Returns the texture used for block particles generated from this bakery.
+     *
+     * <p>The default implementation preserves compatibility with existing
+     * bakeries. Implementations that have a suitable particle texture should
+     * override this method.</p>
+     *
+     * @param state The extended block state being baked.
+     * @return The particle texture, or the missing sprite when no texture is
+     * available.
+     */
+    @SideOnly (Side.CLIENT)
+    default TextureAtlasSprite getParticleTexture(IExtendedBlockState state) {
+        return TextureUtils.getMissingSprite();
+    }
 }
