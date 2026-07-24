@@ -163,7 +163,11 @@ public class LightMatrix implements IVertexOperation {
         float f = (a[0] * lc.fa + a[1] * lc.fb + a[2] * lc.fc + a[3] * lc.fd);
         int[] b = brightness(lc.side);
         state.colour = ColourRGBA.multiplyC(state.colour, f);
-        state.brightness = (int) (b[0] * lc.fa + b[1] * lc.fb + b[2] * lc.fc + b[3] * lc.fd) & 0xFF00FF;
+        int block = Math.round((b[0] & 0xFFFF) * lc.fa + (b[1] & 0xFFFF) * lc.fb +
+            (b[2] & 0xFFFF) * lc.fc + (b[3] & 0xFFFF) * lc.fd);
+        int sky = Math.round((b[0] >>> 16) * lc.fa + (b[1] >>> 16) * lc.fb +
+            (b[2] >>> 16) * lc.fc + (b[3] >>> 16) * lc.fd);
+        state.brightness = (sky << 16) | (block & 0xFFFF);
     }
 
     @Override
