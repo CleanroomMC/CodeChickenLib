@@ -22,7 +22,7 @@ import java.io.File;
 /**
  * Created by covers1624 on 12/10/2016.
  */
-@Mod (modid = CodeChickenLib.MOD_ID, name = CodeChickenLib.MOD_NAME, dependencies = "required-after:forge@[14.23.4.2718,);required-after:cleanroom@[0.3.13-alpha,)", acceptedMinecraftVersions = CodeChickenLib.MC_VERSION_DEP)
+@Mod (modid = CodeChickenLib.MOD_ID, name = CodeChickenLib.MOD_NAME, version = Reference.VERSION, dependencies = "required-after:forge@[14.23.5.2864,);required-after:cleanroom@[0.6.6-alpha,)", acceptedMinecraftVersions = CodeChickenLib.MC_VERSION_DEP)
 public class CodeChickenLib {
 
     public static final String MOD_ID = "codechickenlib";

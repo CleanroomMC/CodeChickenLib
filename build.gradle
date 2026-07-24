@@ -4,6 +4,7 @@ plugins {
     id 'maven-publish'
     id 'org.jetbrains.changelog' version '2.2.1'
     id 'xyz.wagyourtail.unimined' version '1.4.26-kappa'
+    id 'net.kyori.blossom' version '2.2.0'
 }
 
 apply from: 'gradle/scripts/helpers.gradle'
@@ -13,10 +14,6 @@ assertProperty 'mod_version'
 assertProperty 'root_package'
 assertProperty 'mod_id'
 assertProperty 'mod_name'
-
-if (propertyBool('generate_reference_class')) {
-    generateReferenceClass()
-}
 
 assertSubProperties 'use_access_transformer', 'access_transformer_locations'
 assertSubProperties 'is_coremod', 'coremod_includes_mod', 'coremod_plugin_class_name'
@@ -103,34 +100,20 @@ dependencies {
 apply from: 'gradle/scripts/dependencies.gradle'
 
 processResources {
-
-    inputs.property 'mod_id', propertyString('mod_id')
-    inputs.property 'mod_name', propertyString('mod_name')
-    inputs.property 'mod_version', propertyString('mod_version')
-    inputs.property 'mod_description', propertyString('mod_description')
-    inputs.property 'mod_authors', "${propertyStringList('mod_authors', ',').join(', ')}"
-    inputs.property 'mod_credits', propertyString('mod_credits')
-    inputs.property 'mod_url', propertyString('mod_url')
-    inputs.property 'mod_update_json', propertyString('mod_update_json')
-    inputs.property 'mod_logo_path', propertyString('mod_logo_path')
-
-    def filterList = ['mcmod.info', 'pack.mcmeta']
-
-    filesMatching(filterList) { fcd ->
-        fcd.expand(
-                'mod_id': propertyString('mod_id'),
-                'mod_name': propertyString('mod_name'),
-                'mod_version': propertyString('mod_version'),
-                'mod_description': propertyString('mod_description'),
-                'mod_authors': "${propertyStringList('mod_authors', ',').join(', ')}",
-                'mod_credits': propertyString('mod_credits'),
-                'mod_url': propertyString('mod_url'),
-                'mod_update_json': propertyString('mod_update_json'),
-                'mod_logo_path': propertyString('mod_logo_path'),
-        )
-    }
-
     rename '(.+_at.cfg)', 'META-INF/$1'
+}
+
+sourceSets {
+    main {
+        blossom {
+            javaSources {
+                property('mod_version', propertyString('mod_version'))
+            }
+            resources {
+                property('mod_version', propertyString('mod_version'))
+            }
+        }
+    }
 }
 
 jar {
@@ -191,21 +174,14 @@ test {
     }
 }
 
-
-def generateReferenceClass() {
-    var target = new File("${rootProject.projectDir}/src/main/java/${root_package.replace('.', '/')}/Reference.java")
-    var template = new File("${rootProject.projectDir}/template/Reference.java")
-    var replaceMap = [$package : "${root_package}", $mod_id : mod_id, $mod_name : mod_name, $mod_version : mod_version]
-    target.withWriter { var writer ->
-        template.eachLine { var line ->
-            replaceMap.each {if (line.contains(it.key)) line = line.replace(it.key, it.value)}
-            writer.write(line + "\n");
-        }
-    }
-}
-
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
+}
+
+tasks.named('sourcesJar') {
+    dependsOn(tasks.named('generateJavaTemplates'))
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from(layout.buildDirectory.dir('generated/sources/blossom/main/java'))
 }
 
 apply from: 'gradle/scripts/publishing.gradle'
