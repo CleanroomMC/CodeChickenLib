@@ -1,15 +1,12 @@
 package codechicken.lib.reflect;
 
-import codechicken.lib.CodeChickenLib;
 import codechicken.lib.internal.CCLLog;
-import com.google.common.base.Charsets;
 import com.google.common.base.Objects;
 import com.google.common.io.LineProcessor;
 import com.google.common.io.Resources;
 import net.minecraft.launchwrapper.Launch;
 import net.minecraftforge.fml.common.asm.transformers.deobf.FMLDeobfuscatingRemapper;
 import net.minecraftforge.fml.common.launcher.FMLTweaker;
-import net.minecraftforge.fml.relauncher.CoreModManager;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -19,12 +16,9 @@ import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.reflect.Field;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
@@ -284,6 +278,10 @@ public class ObfMapping {
 
         this.s_owner = owner;
         this.s_name = name;
+        // Old mods are trying to use desc w/o L & ;
+        if (!desc.isEmpty() && !desc.contains("(") && !desc.contains(";")) {
+            desc = "L" + desc + ";";
+        }
         this.s_desc = desc;
 
         if (s_owner.contains(".")) {
