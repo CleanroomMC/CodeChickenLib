@@ -39,6 +39,8 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import org.apache.logging.log4j.Level;
 
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -50,20 +52,20 @@ import java.util.function.Function;
 /**
  * Created by covers1624 on 25/10/2016.
  */
-@SideOnly (Side.CLIENT)
+@SideOnly(Side.CLIENT)
 public class ModelBakery {
 
-    private static boolean DEBUG = Boolean.parseBoolean(System.getProperty("ccl.debugBakeryLogging"));
-    private static boolean FORCE_BLOCK_REBAKE = Boolean.parseBoolean(System.getProperty("ccl.debugForceBlockModelRebake"));
-    private static boolean FORCE_ITEM_REBAKE = Boolean.parseBoolean(System.getProperty("ccl.debugForceItemModelRebake"));
+    private static final boolean DEBUG = Boolean.parseBoolean(System.getProperty("ccl.debugBakeryLogging"));
+    private static final boolean FORCE_BLOCK_REBAKE = Boolean.parseBoolean(System.getProperty("ccl.debugForceBlockModelRebake"));
+    private static final boolean FORCE_ITEM_REBAKE = Boolean.parseBoolean(System.getProperty("ccl.debugForceItemModelRebake"));
 
-    private static Cache<String, IBakedModel> keyModelCache = CacheBuilder.newBuilder().expireAfterAccess(30, TimeUnit.MINUTES).build();
+    private static final Cache<String, IBakedModel> keyModelCache = CacheBuilder.newBuilder().expireAfterAccess(Duration.of(30, ChronoUnit.MINUTES)).build();
 
-    private static Map<Item, IItemStackKeyGenerator> itemKeyGeneratorMap = new HashMap<>();
-    private static Map<Block, IBlockStateKeyGenerator> blockKeyGeneratorMap = new HashMap<>();
+    private static final Map<Item, IItemStackKeyGenerator> itemKeyGeneratorMap = new HashMap<>();
+    private static final Map<Block, IBlockStateKeyGenerator> blockKeyGeneratorMap = new HashMap<>();
     private static IBakedModel missingModel;
 
-    @SuppressWarnings ({ "unchecked", "deprecation" })
+    @SuppressWarnings({"unchecked", "deprecation"})
     public static final IBlockStateKeyGenerator defaultBlockKeyGenerator = state -> {
         if (state.getBlock() instanceof IWorldBlockTextureProvider) {
             Map<BlockRenderLayer, Map<EnumFacing, TextureAtlasSprite>> layerFaceSpriteMap = state.getValue(BlockBakeryProperties.LAYER_FACE_SPRITE_MAP);
@@ -114,7 +116,7 @@ public class ModelBakery {
         itemKeyGeneratorMap.put(item, generator);
     }
 
-    @SuppressWarnings ("deprecation")
+    @SuppressWarnings("deprecation")
     public static IBlockState handleExtendedState(IExtendedBlockState state, IBlockAccess world, BlockPos pos) {
         Block block = state.getBlock();
 
@@ -124,8 +126,7 @@ public class ModelBakery {
                 return ((IBlockBakery) bakery).handleState(state, world, pos);
             }
             throw new IllegalStateException("ModelBakery.handleExtendedState called for block that implements IBakeryProvider but does not return a IBlockBakery in IBakeryProvider.getBakery()!");
-        } else if (block instanceof IWorldBlockTextureProvider) {
-            IWorldBlockTextureProvider provider = (IWorldBlockTextureProvider) block;
+        } else if (block instanceof IWorldBlockTextureProvider provider) {
             Map<BlockRenderLayer, Map<EnumFacing, TextureAtlasSprite>> layerFaceSpriteMap = new HashMap<>();
             for (BlockRenderLayer layer : BlockRenderLayer.values()) {
                 if (block.canRenderInLayer(state, layer)) {
@@ -176,27 +177,23 @@ public class ModelBakery {
             if (block instanceof IBakeryProvider) {
                 IBakery bakery = ((IBakeryProvider) block).getBakery();
 
-                List<BakedQuad> generalQuads = new LinkedList<>();
                 Map<EnumFacing, List<BakedQuad>> faceQuads = new HashMap<>();
-                generalQuads.addAll(((IItemBakery) bakery).bakeItemQuads(null, stack));
+                List<BakedQuad> generalQuads = new LinkedList<>(((IItemBakery) bakery).bakeItemQuads(null, stack));
 
                 for (EnumFacing face : EnumFacing.VALUES) {
-                    List<BakedQuad> quads = new LinkedList<>();
 
-                    quads.addAll(VertexDataUtils.shadeQuadFaces(((IItemBakery) bakery).bakeItemQuads(face, stack)));
+                    List<BakedQuad> quads = new LinkedList<>(VertexDataUtils.shadeQuadFaces(((IItemBakery) bakery).bakeItemQuads(face, stack)));
 
                     faceQuads.put(face, quads);
                 }
                 PerspectiveProperties properties = ((IItemBakery) bakery).getModelProperties(stack);
                 return new PerspectiveAwareBakedModel(faceQuads, generalQuads, properties);
 
-            } else if (block instanceof IItemBlockTextureProvider) {
-                IItemBlockTextureProvider provider = (IItemBlockTextureProvider) block;
+            } else if (block instanceof IItemBlockTextureProvider provider) {
                 Map<EnumFacing, List<BakedQuad>> faceQuadMap = new HashMap<>();
                 for (EnumFacing face : EnumFacing.VALUES) {
-                    List<BakedQuad> faceQuads = new LinkedList<>();
 
-                    faceQuads.addAll(VertexDataUtils.shadeQuadFaces(PlanarFaceBakery.bakeFace(face, provider.getTexture(face, stack), DefaultVertexFormats.ITEM)));
+                    List<BakedQuad> faceQuads = new LinkedList<>(VertexDataUtils.shadeQuadFaces(PlanarFaceBakery.bakeFace(face, provider.getTexture(face, stack), DefaultVertexFormats.ITEM)));
 
                     faceQuadMap.put(face, faceQuads);
                 }
@@ -208,14 +205,12 @@ public class ModelBakery {
 
                 IItemBakery bakery = (IItemBakery) ((IBakeryProvider) item).getBakery();
 
-                List<BakedQuad> generalQuads = new LinkedList<>();
                 Map<EnumFacing, List<BakedQuad>> faceQuads = new HashMap<>();
-                generalQuads.addAll(bakery.bakeItemQuads(null, stack));
+                List<BakedQuad> generalQuads = new LinkedList<>(bakery.bakeItemQuads(null, stack));
 
                 for (EnumFacing face : EnumFacing.VALUES) {
-                    List<BakedQuad> quads = new LinkedList<>();
 
-                    quads.addAll(bakery.bakeItemQuads(face, stack));
+                    List<BakedQuad> quads = new LinkedList<>(bakery.bakeItemQuads(face, stack));
 
                     faceQuads.put(face, quads);
                 }
@@ -268,16 +263,13 @@ public class ModelBakery {
     public static IBakedModel generateModel(IExtendedBlockState state) {
         if (state.getBlock() instanceof IBakeryProvider) {
             IBlockBakery bakery = (IBlockBakery) ((IBakeryProvider) state.getBlock()).getBakery();
-            if (bakery instanceof ISimpleBlockBakery) {
-                ISimpleBlockBakery simpleBakery = (ISimpleBlockBakery) bakery;
-                List<BakedQuad> generalQuads = new LinkedList<>();
+            if (bakery instanceof ISimpleBlockBakery simpleBakery) {
                 Map<EnumFacing, List<BakedQuad>> faceQuads = new HashMap<>();
-                generalQuads.addAll(simpleBakery.bakeQuads(null, state));
+                List<BakedQuad> generalQuads = new LinkedList<>(simpleBakery.bakeQuads(null, state));
 
                 for (EnumFacing face : EnumFacing.VALUES) {
-                    List<BakedQuad> quads = new LinkedList<>();
 
-                    quads.addAll(simpleBakery.bakeQuads(face, state));
+                    List<BakedQuad> quads = new LinkedList<>(simpleBakery.bakeQuads(face, state));
 
                     faceQuads.put(face, quads);
                 }
@@ -285,14 +277,12 @@ public class ModelBakery {
                 ModelProperties properties = new ModelProperties(true, true, particle);
                 return new PerspectiveAwareBakedModel(faceQuads, generalQuads, TransformUtils.DEFAULT_BLOCK, properties);
             }
-            if (bakery instanceof ILayeredBlockBakery) {
-                ILayeredBlockBakery layeredBakery = (ILayeredBlockBakery) bakery;
+            if (bakery instanceof ILayeredBlockBakery layeredBakery) {
                 Map<BlockRenderLayer, Map<EnumFacing, List<BakedQuad>>> layerFaceQuadMap = new HashMap<>();
                 Map<BlockRenderLayer, List<BakedQuad>> layerGeneralQuads = new HashMap<>();
                 for (BlockRenderLayer layer : BlockRenderLayer.values()) {
                     if (state.getBlock().canRenderInLayer(state, layer)) {
-                        LinkedList<BakedQuad> quads = new LinkedList<>();
-                        quads.addAll(layeredBakery.bakeLayerFace(null, layer, state));
+                        LinkedList<BakedQuad> quads = new LinkedList<>(layeredBakery.bakeLayerFace(null, layer, state));
                         layerGeneralQuads.put(layer, quads);
                     }
                 }
@@ -301,8 +291,7 @@ public class ModelBakery {
                     if (state.getBlock().canRenderInLayer(state, layer)) {
                         Map<EnumFacing, List<BakedQuad>> faceQuadMap = new HashMap<>();
                         for (EnumFacing face : EnumFacing.VALUES) {
-                            List<BakedQuad> quads = new LinkedList<>();
-                            quads.addAll(layeredBakery.bakeLayerFace(face, layer, state));
+                            List<BakedQuad> quads = new LinkedList<>(layeredBakery.bakeLayerFace(face, layer, state));
                             faceQuadMap.put(face, quads);
                         }
                         layerFaceQuadMap.put(layer, faceQuadMap);
@@ -321,7 +310,7 @@ public class ModelBakery {
         return missingModel;
     }
 
-    @SuppressWarnings ({ "unchecked", "deprecation" })
+    @SuppressWarnings({"unchecked", "deprecation"})
     public static Map<BlockRenderLayer, Map<EnumFacing, List<BakedQuad>>> generateLayerFaceQuadMap(IExtendedBlockState state) {
         Map<BlockRenderLayer, Map<EnumFacing, TextureAtlasSprite>> layerFaceSpriteMap = state.getValue(BlockBakeryProperties.LAYER_FACE_SPRITE_MAP);
         Map<BlockRenderLayer, Map<EnumFacing, List<BakedQuad>>> layerFaceQuadMap = new HashMap<>();
