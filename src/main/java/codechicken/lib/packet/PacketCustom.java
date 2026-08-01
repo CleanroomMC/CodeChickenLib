@@ -552,7 +552,7 @@ public final class PacketCustom extends ByteBuf implements MCDataInput, MCDataOu
     @Override
     public PacketCustom writeVector(Vector3 vec) {
         MCDataOutput.super.writeVector(vec);
-        return null;
+        return this;
     }
 
     @Override
